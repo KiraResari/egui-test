@@ -1,11 +1,17 @@
-use eframe::{egui, epi};
+use std::str::FromStr;
+
+use eframe::{egui::{self, FontDefinitions, FontFamily, FontData}, epi};
+
+use crate::keys;
+
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
     // Example stuff:
-    label: String,
+    label_text: String,
+    kanji: String,
 
     // this how you opt-out of serialization of a member
     #[cfg_attr(feature = "persistence", serde(skip))]
@@ -16,8 +22,9 @@ impl Default for TemplateApp {
     fn default() -> Self {
         Self {
             // Example stuff:
-            label: "Hello World!".to_owned(),
+            label_text: "Hello World!".to_owned(),
             value: 2.7,
+            kanji: String::from("狐"),
         }
     }
 }
@@ -34,6 +41,20 @@ impl epi::App for TemplateApp {
         _frame: &epi::Frame,
         _storage: Option<&dyn epi::Storage>,
     ) {
+        let mut font = FontDefinitions::default();
+        font.font_data.insert(
+            keys::FONT_GOTHIC.to_string(),
+            FontData{
+                font: std::borrow::Cow::Borrowed(
+                    include_bytes!("../fonts/msgothic.ttc")
+                ),
+                index: 0
+            }
+        );
+        font.fonts_for_family.get_mut(&FontFamily::Monospace).unwrap().insert(0, keys::FONT_GOTHIC.to_string());
+        font.fonts_for_family.get_mut(&FontFamily::Proportional).unwrap().insert(0, keys::FONT_GOTHIC.to_string());
+        _ctx.set_fonts(font);
+
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
         #[cfg(feature = "persistence")]
@@ -52,7 +73,11 @@ impl epi::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &epi::Frame) {
-        let Self { label, value } = self;
+        let Self { 
+            label_text, 
+            value ,
+            kanji
+        } = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -75,7 +100,7 @@ impl epi::App for TemplateApp {
 
             ui.horizontal(|ui| {
                 ui.label("Write something: ");
-                ui.text_edit_singleline(label);
+                ui.text_edit_singleline(label_text);
             });
 
             ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
@@ -104,6 +129,7 @@ impl epi::App for TemplateApp {
                 "Source code."
             ));
             egui::warn_if_debug_build(ui);
+            ui.label(&*kanji);
         });
 
         if false {
